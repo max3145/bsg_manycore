@@ -66,7 +66,7 @@ always_comb begin
        (instruction_i.funct7 == `RV32_FCVT_S_I2F_FUN7) // FCVT.S.W, FCVT.S.WU
        | (instruction_i.funct7 == `RV32_FMV_W_X_FUN7); // FMV.W.X
     end
-    `RV32_LOAD_FP, `RV32_STORE_FP: begin // FLW, FSW
+    `RV32_LOAD_FP, `RV32_STORE_FP: begin // FLW, FSW, FLS, FSS
       decode_o.read_rs1 = 1'b1;
      end
     `RV32_SYSTEM: begin
@@ -251,6 +251,7 @@ always_comb begin
   decode_o.read_frs3 = 1'b0;
   decode_o.write_frd = 1'b0;
   decode_o.is_fp_op = 1'b0;
+  decode_o.is_simd_op = 1'b0;
   unique casez (instruction_i)
     // Rtype float instr
     `RV32_FADD_S,  `RV32_FSUB_S,   `RV32_FMUL_S,
@@ -261,6 +262,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b1;
       decode_o.is_fp_op = 1'b1;
+      decode_o.is_simd_op = 1'b0;
     end
     // compare
     `RV32_FEQ_S, `RV32_FLT_S, `RV32_FLE_S: begin
@@ -269,6 +271,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b0;
       decode_o.is_fp_op = 1'b1;
+      decode_o.is_simd_op = 1'b0;
     end
     // classify
     `RV32_FCLASS_S: begin
@@ -277,6 +280,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b0;
       decode_o.is_fp_op = 1'b1;
+      decode_o.is_simd_op = 1'b0;
     end
     // i2f (signed int)
     `RV32_FCVT_S_W, `RV32_FCVT_S_WU: begin
@@ -285,6 +289,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b1;
       decode_o.is_fp_op = 1'b1;
+      decode_o.is_simd_op = 1'b0;
     end
     // f2i
     `RV32_FCVT_W_S, `RV32_FCVT_WU_S: begin
@@ -293,6 +298,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b0;
       decode_o.is_fp_op = 1'b1;
+      decode_o.is_simd_op = 1'b0;
     end
     // FMV (fp -> int)
     `RV32_FMV_X_W: begin
@@ -301,6 +307,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b0;
       decode_o.is_fp_op = 1'b1;
+      decode_o.is_simd_op = 1'b0;
     end
     // FMV (int -> fp)
     `RV32_FMV_W_X: begin
@@ -309,6 +316,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b1;
       decode_o.is_fp_op = 1'b1;
+      decode_o.is_simd_op = 1'b0;
     end
     // Float load
     `RV32_FLW_S: begin
@@ -317,6 +325,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b1;
       decode_o.is_fp_op = 1'b0;
+      decode_o.is_simd_op = 1'b0;
     end
     // Float store
     `RV32_FSW_S: begin
@@ -325,6 +334,25 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b0;
       decode_o.is_fp_op = 1'b0;
+      decode_o.is_simd_op = 1'b0;
+    end
+    // SIMD Float load
+    `RV32_FLS_S: begin
+      decode_o.read_frs1 = 1'b0;
+      decode_o.read_frs2 = 1'b0;
+      decode_o.read_frs3 = 1'b0;
+      decode_o.write_frd = 1'b1;
+      decode_o.is_fp_op = 1'b0;
+      decode_o.is_simd_op = 1'b1;
+    end
+    // SIMD Float store
+    `RV32_FSS_S: begin
+      decode_o.read_frs1 = 1'b0;
+      decode_o.read_frs2 = 1'b1;
+      decode_o.read_frs3 = 1'b0;
+      decode_o.write_frd = 1'b0;
+      decode_o.is_fp_op = 1'b0;
+      decode_o.is_simd_op = 1'b1;
     end
     // FMA
     `RV32_FMADD_S, `RV32_FMSUB_S, `RV32_FNMSUB_S, `RV32_FNMADD_S: begin
@@ -333,6 +361,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b1;
       decode_o.write_frd = 1'b1;
       decode_o.is_fp_op = 1'b1;
+      decode_o.is_simd_op = 1'b0;
     end
     // FDIV, SQRT
     `RV32_FDIV_S, `RV32_FSQRT_S: begin
@@ -341,6 +370,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b1;
       decode_o.is_fp_op = 1'b1;
+      decode_o.is_simd_op = 1'b0;
     end
     default: begin
       decode_o.read_frs1 = 1'b0;
@@ -348,6 +378,7 @@ always_comb begin
       decode_o.read_frs3 = 1'b0;
       decode_o.write_frd = 1'b0;
       decode_o.is_fp_op = 1'b0;
+      decode_o.is_simd_op = 1'b0;
     end
   endcase
 end
