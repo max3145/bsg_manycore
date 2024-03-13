@@ -100,6 +100,7 @@ typedef struct packed {
   logic is_byte_op;       // Op is byte load/store
   logic is_hex_op;        // Op is hex load/store
   logic is_load_unsigned; // Op is unsigned load
+  logic is_simd_op;       // Op is SIMD load/store
 
   // Branch & Jump
   logic is_branch_op;
