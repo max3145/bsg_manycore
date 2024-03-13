@@ -24,10 +24,14 @@ localparam RV32_Simm_width_gp     = 12;
 localparam RV32_Bimm_width_gp     = 12;
 localparam RV32_Uimm_width_gp     = 20;
 localparam RV32_Jimm_width_gp     = 20;
-
+       
 localparam fpu_recoded_exp_width_gp    = 8;
 localparam fpu_recoded_sig_width_gp    = 24;
 localparam fpu_recoded_data_width_gp   = (1+fpu_recoded_exp_width_gp+fpu_recoded_sig_width_gp);
+
+//SIMD parameters
+localparam fp_SIMD_width_gp = (fpu_recoded_data_width_gp * 4);
+localparam SIMD_width_gp    = (RV32_reg_data_width_gp * 4);
 
 // Maximum EPA width for vanilla core (word addr)
 localparam epa_word_addr_width_gp=16;
@@ -234,6 +238,7 @@ typedef struct packed
     decode_s                           decode;            // Decode signals
     logic [RV32_reg_data_width_gp-1:0] rs1_val;           // RF output data from RS1 address
     logic [RV32_reg_data_width_gp-1:0] rs2_val;           // RF output data from RS2 address
+    logic [(RV32_reg_data_width_gp * 3)-1:0] rs2_simd_val;// RF output data from FPRF SIMD 
                                                           // CSR instructions use this register for loading CSR vals
     logic [RV32_Iimm_width_gp-1:0]     mem_addr_op2;      // the second operands to compute
                                                           // memory address
@@ -251,6 +256,7 @@ typedef struct packed {
     logic is_byte_op;
     logic is_hex_op;
     logic is_load_unsigned;
+    logic is_simd_op;
     logic local_load;
     logic [1:0] byte_sel;
     logic icache_miss;
@@ -264,6 +270,7 @@ typedef struct packed {
 typedef struct packed {
     logic                              write_rd;
     logic [RV32_reg_addr_width_gp-1:0] rd_addr;
+    logic                              is_simd_op;
     logic                              icache_miss;
     logic clear_sb;
 } wb_ctrl_signals_s;
@@ -282,17 +289,20 @@ typedef struct packed {
 typedef struct packed {
   logic [fpu_recoded_data_width_gp-1:0] rs1_val;
   logic [fpu_recoded_data_width_gp-1:0] rs2_val;
+  logic [(fpu_recoded_data_width_gp*3)-1:0] rs2_simd_val;
   logic [fpu_recoded_data_width_gp-1:0] rs3_val;
 } fp_exe_data_signals_s;
 
 // FLW write back stage signals
 typedef struct packed {
     logic valid;
+    logic is_simd_op;
     logic [RV32_reg_addr_width_gp-1:0] rd_addr;
 } flw_wb_ctrl_signals_s;
 
 typedef struct packed {
     logic [RV32_reg_data_width_gp-1:0] rf_data;
+    logic [(RV32_reg_data_width_gp*3)-1:0] rf_simd_data;
 } flw_wb_data_signals_s;
 
 
