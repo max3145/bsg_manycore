@@ -1,5 +1,5 @@
 /**
- *    SIMD_regfile_synth.v
+ *    s_regfile_synth.sv
  *
  *    SIMD synthesized register file
  *
