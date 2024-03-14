@@ -1607,6 +1607,7 @@ module vanilla_core
                       ? (data_width_p)'(fcsr_data_lo)
                       : mcsr_data_lo)
                     : rs2_val_to_exe),
+      rs2_simd_val: fsw_simd_data,
       mem_addr_op2: mem_addr_op2,
       icache_miss: id_r.icache_miss,
       branch_predicted_taken: id_r.branch_predicted_taken
