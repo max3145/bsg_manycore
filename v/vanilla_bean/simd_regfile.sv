@@ -14,8 +14,6 @@ module simd_regfile
 
     , localparam addr_width_lp=`BSG_SAFE_CLOG2(els_p)
   )
-
-module simd_regfile
   (
     input clk_i
     , input reset_i
@@ -61,5 +59,5 @@ module simd_regfile
 
 endmodule
 
-`BSG_ABSTRACT_MODULE(SIMD_regfile_synth)
+`BSG_ABSTRACT_MODULE(simd_regfile)
 
