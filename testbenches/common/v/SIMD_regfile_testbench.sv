@@ -1,3 +1,5 @@
+// Code your testbench here
+// or browse Examples
 module tb_RF();
 parameter width_p = 33;
 parameter els_p = 32;
@@ -11,12 +13,10 @@ parameter addr_width_lp = 5;
   reg [2:0] r_v_i;
   reg [2:0][addr_width_lp-1:0] r_addr_i;
   
-  wire [width_p-1:0] rs1_data_o; //carries frs1
-  wire [width_p-1:0] rs2_data_o; //carries frs2_scalar
-  wire [width_p-1:0] rs3_data_o; //carries frs3
+  wire [2:0][width_p-1:0] r_data_o; //carries frs1,2,3
   wire [2:0][width_p-1:0] rs2_simd_data_o; //NEW OUTPUT, width 99
   
-  SIMD_regfile rf(.clk_i(clk_i), .reset_i(reset_i), .w_v_i(w_v_i), .w_addr_i(w_addr_i), 	.w_data_i(w_data_i), .r_v_i(r_v_i), .r_addr_i(r_addr_i), .rs1_data_o(rs1_data_o), .rs2_data_o(rs2_data_o), .rs3_data_o(rs3_data_o), .rs2_simd_data_o(rs2_simd_data_o));
+  simd_regfile rf(.clk_i(clk_i), .reset_i(reset_i), .w_v_i(w_v_i), .w_addr_i(w_addr_i), 	.w_data_i(w_data_i), .r_v_i(r_v_i), .r_addr_i(r_addr_i), .r_data_o(r_data_o), .rs2_simd_data_o(rs2_simd_data_o));
 
 initial begin
       $dumpfile("dump.vcd");
@@ -66,7 +66,7 @@ end
   always #5 clk_i = ~clk_i;
   
   task display;
-    #1 $display("rs1_data_o:%0h, rs2_data_o:%0h, rs3_data_o:%0h, simd[0]:0%h, simd[1]:0%h, simd[2]:0%h",rs1_data_o, rs2_data_o, rs3_data_o, rs2_simd_data_o[0], rs2_simd_data_o[1], rs2_simd_data_o[2]);
+    #1 $display("rs1_data_o:%0h, rs2_data_o:%0h, rs3_data_o:%0h, simd[0]:0%h, simd[1]:0%h, simd[2]:0%h",r_data_o[0], r_data_o[1], r_data_o[2], rs2_simd_data_o[0], rs2_simd_data_o[1], rs2_simd_data_o[2]);
   endtask
   
 endmodule
