@@ -575,6 +575,32 @@ module vanilla_core
     ,.out(fsw_data)
   );
 
+  //Added 3x recFN modules for SIMD
+  logic [2:0][data_width_p-1:0] fsw_simd_data;
+  recFNToFN #(
+    .expWidth(fpu_recoded_exp_width_gp)
+    ,.sigWidth(fpu_recoded_sig_width_gp) 
+  ) frs2_simd_to_fn1 (
+    .in(float_rf_simd_rdata[0])
+    ,.out(fsw_simd_data[0])
+  );
+	
+  recFNToFN #(
+    .expWidth(fpu_recoded_exp_width_gp)
+    ,.sigWidth(fpu_recoded_sig_width_gp) 
+  ) frs2_simd_to_fn2 (
+    .in(float_rf_simd_rdata[1])
+    ,.out(fsw_simd_data[1])
+  );
+	
+  recFNToFN #(
+    .expWidth(fpu_recoded_exp_width_gp)
+    ,.sigWidth(fpu_recoded_sig_width_gp) 
+  ) frs2_simd_to_fn3 (
+    .in(float_rf_simd_rdata[2])
+    ,.out(fsw_simd_data[2])
+  );
+	
   logic [data_width_p-1:0] exe_result;
   logic [data_width_p-1:0] mem_result;
   logic [1:0] rs1_forward_sel;
