@@ -33,6 +33,7 @@ module lsu
     , input decode_s exe_decode_i
     , input [data_width_p-1:0] exe_rs1_i
     , input [data_width_p-1:0] exe_rs2_i
+    , input [2:0][data_width_p-1:0] exe_rs2_simd_i
     , input [reg_addr_width_lp-1:0] exe_rd_i
     , input [RV32_Iimm_width_gp-1:0] mem_offset_i
     , input [data_width_p-1:0] pc_plus4_i
@@ -46,8 +47,8 @@ module lsu
     , output logic dmem_v_o
     , output logic dmem_w_o
     , output logic [dmem_addr_width_lp-1:0] dmem_addr_o
-    , output logic [data_width_p-1:0] dmem_data_o
-    , output logic [data_mask_width_lp-1:0] dmem_mask_o 
+    , output logic [3:0][data_width_p-1:0] dmem_data_o
+    , output logic [3:0][data_mask_width_lp-1:0] dmem_mask_o 
 
     , output logic reserve_o
     , output logic [1:0] byte_sel_o 
@@ -66,7 +67,9 @@ module lsu
   //
   logic [data_width_p-1:0] store_data;
   logic [data_mask_width_lp-1:0] store_mask;
-
+  logic [3:0][data_width_p-1:0] store_simd_mask;
+  logic [3:0][data_width_p-1:0] store_simd_data;
+  
   always_comb begin
     if (exe_decode_i.is_byte_op) begin
       store_data = {4{exe_rs2_i[7:0]}};
@@ -91,7 +94,33 @@ module lsu
     end
   end
 
-
+  always_comb begin
+    if (exe_decode_i.is_simd_op) begin
+      store_simd_data = {{exe_rs2_simd_i},{store_data}};
+      store_simd_mask = {{4{store_mask}}};
+    end
+    else begin
+      store_simd_data = {{4{store_data}}};
+      unique casez (mem_addr[1:0])
+        2'b00: begin
+          store_simd_mask = {{3{4'b0000}}, {store_mask}}; //only store [0]
+        end
+        2'b01: begin
+          store_simd_mask = {{2{4'b0000}}, {store_mask}, {1{4'b0000}}}; //only store [1] element
+        end
+        2'b10: begin
+          store_simd_mask = {{1{4'b0000}}, {store_mask}, {2{4'b0000}}}; //only store [2] element
+        end
+        2'b11: begin
+          store_simd_mask = {{store_mask},{3{4'b0000}}}; // only store [3] element
+        end
+        default: begin
+          store_simd_mask = 16'b0000000000000000;
+        end
+      endcase
+    end
+  end 
+  
   // to local DMEM
   //
   wire is_local_dmem_addr = (mem_addr ==? 32'b00000000_00000000_0000????_????????);
@@ -101,8 +130,8 @@ module lsu
      exe_decode_i.is_lr_op | exe_decode_i.is_lr_aq_op);
   assign dmem_w_o = exe_decode_i.is_store_op;
   assign dmem_addr_o = mem_addr[2+:dmem_addr_width_lp]; 
-  assign dmem_data_o = store_data;
-  assign dmem_mask_o = store_mask;
+  assign dmem_data_o = store_simd_data;
+  assign dmem_mask_o = store_simd_mask;
 
   assign byte_sel_o = mem_addr[1:0];
 
