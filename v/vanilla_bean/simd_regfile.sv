@@ -8,14 +8,14 @@
 
 `include "bsg_defines.sv"
 
-module SIMD_regfile_synth
+module simd_regfile
   #(`BSG_INV_PARAM(width_p)
     , `BSG_INV_PARAM(els_p)
 
     , localparam addr_width_lp=`BSG_SAFE_CLOG2(els_p)
   )
 
-module SIMD_regfile
+module simd_regfile
   (
     input clk_i
     , input reset_i
