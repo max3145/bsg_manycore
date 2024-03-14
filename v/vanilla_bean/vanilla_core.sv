@@ -309,12 +309,11 @@ module vanilla_core
  
   logic [2:0] float_rf_read;
   logic [2:0][fpu_recoded_data_width_gp-1:0] float_rf_rdata;
+  logic [2:0][fpu_recoded_data_width_gp-1:0] float_rf_simd_rdata;
 
-  regfile #(
+  simd_regfile #(
     .width_p(fpu_recoded_data_width_gp)
     ,.els_p(RV32_reg_els_gp)
-    ,.num_rs_p(3)
-    ,.x0_tied_to_zero_p(0)
   ) float_rf (
     .clk_i(clk_i)
     ,.reset_i(reset_i)
@@ -326,6 +325,7 @@ module vanilla_core
     ,.r_v_i(float_rf_read)
     ,.r_addr_i({instruction[31:27], instruction.rs2, instruction.rs1})
     ,.r_data_o(float_rf_rdata)
+    ,.rs2_simd_data_o(float_rf_simd_rdata)
   );
 
 
