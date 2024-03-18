@@ -735,8 +735,8 @@ module vanilla_core
   logic lsu_dmem_v_lo;
   logic lsu_dmem_w_lo;
   logic [dmem_addr_width_lp-1:0] lsu_dmem_addr_lo;
-  logic [data_width_p-1:0] lsu_dmem_data_lo;
-  logic [data_mask_width_lp-1:0] lsu_dmem_mask_lo;
+  logic [3:0][data_width_p-1:0] lsu_dmem_data_lo;
+  logic [3:0][data_mask_width_lp-1:0] lsu_dmem_mask_lo;
   logic lsu_reserve_lo;
   logic [1:0] lsu_byte_sel_lo;
 
@@ -750,6 +750,7 @@ module vanilla_core
     ,.exe_decode_i(exe_r.decode)
     ,.exe_rs1_i(exe_r.rs1_val)
     ,.exe_rs2_i(exe_r.rs2_val)
+    ,.exe_rs2_simd_i(exe_r.rs2_simd_val)
     ,.exe_rd_i(exe_r.instruction.rd)
     ,.mem_offset_i(exe_r.mem_addr_op2)
     ,.pc_plus4_i(exe_r.pc_plus4)
