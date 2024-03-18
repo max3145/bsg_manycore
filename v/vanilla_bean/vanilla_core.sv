@@ -972,27 +972,38 @@ module vanilla_core
 
   logic dmem_v_li;
   logic dmem_w_li;
-  logic [data_width_p-1:0] dmem_data_li;
+  logic [3:0][data_width_p-1:0] dmem_data_li;
   logic [dmem_addr_width_lp-1:0] dmem_addr_li;
-  logic [data_mask_width_lp-1:0] dmem_mask_li;
-  logic [data_width_p-1:0] dmem_data_lo;
+  logic [3:0][data_mask_width_lp-1:0] dmem_mask_li;
+  logic [3:0][data_width_p-1:0] dmem_data_lo;
 
   bsg_mem_1rw_sync_mask_write_byte #(
     .els_p(dmem_size_p)
-    ,.data_width_p(data_width_p)
+    ,.data_width_p(4*data_width_p)
     ,.latch_last_read_p(1)
   ) dmem (
     .clk_i(clk_i)
     ,.reset_i(reset_i)
     ,.v_i(dmem_v_li)
     ,.w_i(dmem_w_li)
-    ,.addr_i(dmem_addr_li)
+    ,.addr_i(dmem_addr_li[31:2])
     ,.data_i(dmem_data_li)
     ,.write_mask_i(dmem_mask_li)
     ,.data_o(dmem_data_lo)
   );
 
-  assign remote_dmem_data_o = dmem_data_lo;
+  //output from dmem mux
+  logic [data_width_p-1:0] dmem_mux_lo;
+  bsg_mux #(
+    .els_p(4)
+    ,.width_p(data_width_p)
+  ) mem_out_mux (
+    .data_i(dmem_data_lo)
+    ,.sel_i(dmem_addr_li[1:0])
+    ,.data_o(dmem_mux_lo)
+  );
+	
+  assign remote_dmem_data_o = dmem_mux_lo;
 
   // local load buffer
   //
