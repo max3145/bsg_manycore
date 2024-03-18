@@ -2013,7 +2013,7 @@ module vanilla_core
         float_sb_clear = 1'b1;
         float_sb_clear_id = float_remote_load_resp_rd_i;
       end
-    end
+    end	  
   end
 
   // fpu_float stall control
