@@ -1034,7 +1034,7 @@ module vanilla_core
   logic [data_width_p-1:0] local_load_packed_data;
 
   load_packer local_lp (
-    .mem_data_i(local_load_data_r[0])
+    .mem_data_i(dmem_mux_lo)
     ,.unsigned_load_i(mem_ctrl_r.is_load_unsigned)
     ,.byte_load_i(mem_ctrl_r.is_byte_op)
     ,.hex_load_i(mem_ctrl_r.is_hex_op)
