@@ -997,7 +997,7 @@ module vanilla_core
   bsg_mux #(
     .els_p(4)
     ,.width_p(data_width_p)
-  ) exe_rs1_fwd_mux (
+  ) mem_out_mux (
     .data_i(dmem_data_lo)
     ,.sel_i(dmem_addr_li[1:0])
     ,.data_o(dmem_mux_lo)
