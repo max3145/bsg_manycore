@@ -998,7 +998,7 @@ module vanilla_core
   //
   logic local_load_en;
   logic local_load_en_r;
-  logic [data_width_p-1:0] local_load_data_r;
+  logic [3:0][data_width_p-1:0] local_load_data_r;
 
   bsg_dff_reset #(
     .width_p(1)
@@ -1010,7 +1010,7 @@ module vanilla_core
   );
 
   bsg_dff_en_bypass #(
-    .width_p(data_width_p)
+    .width_p(4*data_width_p)
   ) local_load_buffer (
     .clk_i(clk_i)
     ,.en_i(local_load_en_r)
@@ -1023,7 +1023,7 @@ module vanilla_core
   logic [data_width_p-1:0] local_load_packed_data;
 
   load_packer local_lp (
-    .mem_data_i(local_load_data_r)
+    .mem_data_i(local_load_data_r[0])
     ,.unsigned_load_i(mem_ctrl_r.is_load_unsigned)
     ,.byte_load_i(mem_ctrl_r.is_byte_op)
     ,.hex_load_i(mem_ctrl_r.is_hex_op)
