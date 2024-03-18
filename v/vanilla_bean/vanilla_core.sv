@@ -1647,6 +1647,7 @@ module vanilla_core
           decode: '0,
           rs1_val: '0,
           rs2_val: '0,
+	  rs2_simd_val: '0,
           mem_addr_op2: '0,
           icache_miss: 1'b0,
           branch_predicted_taken: 1'b0
@@ -1735,6 +1736,7 @@ module vanilla_core
       is_byte_op: exe_r.decode.is_byte_op,
       is_hex_op: exe_r.decode.is_hex_op,
       is_load_unsigned: exe_r.decode.is_load_unsigned,
+      is_simd_op: exe_r.is_simd_op,
       local_load: local_load_in_exe,
       byte_sel: lsu_byte_sel_lo,
       icache_miss: exe_r.icache_miss
@@ -1767,6 +1769,7 @@ module vanilla_core
         is_byte_op: 1'b0,
         is_hex_op: 1'b0,
         is_load_unsigned: 1'b0,
+	is_simd_op: 1'b0,
         local_load: 1'b0,
         byte_sel: '0,
         icache_miss: 1'b0
