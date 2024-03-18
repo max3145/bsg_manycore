@@ -1134,16 +1134,39 @@ module vanilla_core
     ,.data_o(flw_data)
   );
 
-  logic [fpu_recoded_data_width_gp-1:0] flw_recoded_data;
+  logic [3:0][fpu_recoded_data_width_gp-1:0] flw_recoded_data;
   fNToRecFN #(
     .expWidth(fpu_recoded_exp_width_gp)
     ,.sigWidth(fpu_recoded_sig_width_gp)
-  ) flw_to_RecFN (
+  ) flw_to_RecFN1 (
     .in(flw_data)
-    ,.out(flw_recoded_data)
+    ,.out(flw_recoded_data[0])
   );
 
+  fNToRecFN #(
+    .expWidth(fpu_recoded_exp_width_gp)
+    ,.sigWidth(fpu_recoded_sig_width_gp)
+  ) flw_to_RecFN2 (
+    .in(flw_wb_data_r.rf_simd_data[0])
+    ,.out(flw_recoded_data[1])
+  );
+	
+  fNToRecFN #(
+    .expWidth(fpu_recoded_exp_width_gp)
+    ,.sigWidth(fpu_recoded_sig_width_gp)
+  ) flw_to_RecFN3 (
+    .in(flw_wb_data_r.rf_simd_data[1])
+    ,.out(flw_recoded_data[2])
+  );
 
+  fNToRecFN #(
+    .expWidth(fpu_recoded_exp_width_gp)
+    ,.sigWidth(fpu_recoded_sig_width_gp)
+  ) flw_to_RecFN4 (
+    .in(flw_wb_data_r.rf_simd_data[2])
+    ,.out(flw_recoded_data[3])
+  );
+	
   //////////////////////////////
   //                          //
   //      CONTROL LOGIC       //
