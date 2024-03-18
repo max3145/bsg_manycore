@@ -1027,7 +1027,7 @@ module vanilla_core
   ) local_load_buffer (
     .clk_i(clk_i)
     ,.en_i(local_load_en_r)
-    ,.data_i(dmem_data_lo)
+    ,.data_i({dmem_data_lo[3:1], dmem_mux_lo})
     ,.data_o(local_load_data_r)
   );
 
@@ -1983,7 +1983,7 @@ module vanilla_core
       select_remote_flw = 1'b0;
       float_rf_wen = 1'b1;
       float_rf_waddr = flw_wb_ctrl_r.rd_addr;
-      float_rf_wdata = flw_recoded_data; 
+      float_rf_wdata = flw_recoded_data[0]; 
     end
     else if (fpu_float_v_lo) begin
       float_rf_wen = 1'b1;
@@ -2009,7 +2009,7 @@ module vanilla_core
         select_remote_flw = 1'b1;
         float_rf_wen = 1'b1;
         float_rf_waddr = float_remote_load_resp_rd_i;
-        float_rf_wdata = flw_recoded_data;
+        float_rf_wdata = flw_recoded_data[0];
         float_remote_load_resp_yumi_o = 1'b1;
 
         float_sb_clear = 1'b1;
@@ -2018,6 +2018,42 @@ module vanilla_core
     end	  
   end
 
+  always_comb begin
+    float_rf_wen_li = 4'b0;  
+    float_rf_wdata_li = '0;
+    
+    if (flw_wb_ctrl_r.is_simd_op) begin
+      float_rf_wdata_li = flw_recoded_data;
+    end
+    else begin
+      float_rf_wdata_li = {4{float_rf_wdata}};
+    end
+    
+    if (float_rf_wen) begin
+      unique casez (float_rf_waddr[1:0])
+        2'b00: begin
+          float_rf_wen_li = 4'b0001; //0001
+        end
+        2'b01: begin
+          float_rf_wen_li = 4'b0010; //0010
+        end
+        2'b10: begin
+          float_rf_wen_li = 4'b0100; //0100
+        end
+        2'b11: begin
+          float_rf_wen_li = 4'b1000; //0001
+        end
+        default: begin
+          float_rf_wen_li = 4'b0000;
+        end
+      end    
+        
+    else begin
+      float_rf_wen_li = 4'b0000; //not enabled
+    end
+  end
+  
+	
   // fpu_float stall control
   assign stall_fpu1_li = stall_all;
   assign stall_fpu2_li = stall_remote_flw_wb;
