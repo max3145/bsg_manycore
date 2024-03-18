@@ -305,7 +305,7 @@ module vanilla_core
   //
   logic [3:0]float_rf_wen;
   logic [reg_addr_width_lp-1:0] float_rf_waddr;
-  logic [fpu_recoded_data_width_gp-1:0] float_rf_wdata;
+  logic [3:0][fpu_recoded_data_width_gp-1:0] float_rf_wdata;
  
   logic [2:0] float_rf_read;
   logic [2:0][fpu_recoded_data_width_gp-1:0] float_rf_rdata;
