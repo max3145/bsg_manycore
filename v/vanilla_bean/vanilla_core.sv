@@ -303,10 +303,12 @@ module vanilla_core
 
   // FP regfile
   //
-  logic [3:0]float_rf_wen;
+  logic [3:0]float_rf_wen_li;
+  logic float_rf_wen;
   logic [reg_addr_width_lp-1:0] float_rf_waddr;
-  logic [3:0][fpu_recoded_data_width_gp-1:0] float_rf_wdata;
- 
+  logic [3:0][fpu_recoded_data_width_gp-1:0] float_rf_wdata_li;
+  logic [fpu_recoded_data_width_gp-1:0] float_rf_wdata;
+	
   logic [2:0] float_rf_read;
   logic [2:0][fpu_recoded_data_width_gp-1:0] float_rf_rdata;
   logic [2:0][fpu_recoded_data_width_gp-1:0] float_rf_simd_rdata;
