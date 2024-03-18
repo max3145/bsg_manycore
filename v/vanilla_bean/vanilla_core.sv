@@ -303,7 +303,7 @@ module vanilla_core
 
   // FP regfile
   //
-  logic float_rf_wen;
+  logic [3:0]float_rf_wen;
   logic [reg_addr_width_lp-1:0] float_rf_waddr;
   logic [fpu_recoded_data_width_gp-1:0] float_rf_wdata;
  
@@ -1912,10 +1912,12 @@ module vanilla_core
     flw_wb_data_en = ~stall_all;
     flw_wb_ctrl_n = '{
       valid: mem_ctrl_r.write_frd,
+      is_simd_op: mem_ctrl_r.is_simd_op,
       rd_addr: mem_ctrl_r.rd_addr
     };
     flw_wb_data_n = '{
-      rf_data: local_load_data_r
+      rf_data: local_load_data_r[0],
+      rf_simd_data: local_load_data_r[3:1]
     };
   end
 
