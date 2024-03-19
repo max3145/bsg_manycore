@@ -303,10 +303,12 @@ module vanilla_core
 
   // FP regfile
   //
+  logic [3:0]float_rf_wen_li;
   logic float_rf_wen;
   logic [reg_addr_width_lp-1:0] float_rf_waddr;
+  logic [3:0][fpu_recoded_data_width_gp-1:0] float_rf_wdata_li;
   logic [fpu_recoded_data_width_gp-1:0] float_rf_wdata;
- 
+	
   logic [2:0] float_rf_read;
   logic [2:0][fpu_recoded_data_width_gp-1:0] float_rf_rdata;
   logic [2:0][fpu_recoded_data_width_gp-1:0] float_rf_simd_rdata;
@@ -1025,7 +1027,7 @@ module vanilla_core
   ) local_load_buffer (
     .clk_i(clk_i)
     ,.en_i(local_load_en_r)
-    ,.data_i(dmem_data_lo)
+    ,.data_i({dmem_data_lo[3:1], dmem_mux_lo})
     ,.data_o(local_load_data_r)
   );
 
@@ -1034,7 +1036,7 @@ module vanilla_core
   logic [data_width_p-1:0] local_load_packed_data;
 
   load_packer local_lp (
-    .mem_data_i(local_load_data_r[0])
+    .mem_data_i(dmem_mux_lo)
     ,.unsigned_load_i(mem_ctrl_r.is_load_unsigned)
     ,.byte_load_i(mem_ctrl_r.is_byte_op)
     ,.hex_load_i(mem_ctrl_r.is_hex_op)
@@ -1134,16 +1136,39 @@ module vanilla_core
     ,.data_o(flw_data)
   );
 
-  logic [fpu_recoded_data_width_gp-1:0] flw_recoded_data;
+  logic [3:0][fpu_recoded_data_width_gp-1:0] flw_recoded_data;
   fNToRecFN #(
     .expWidth(fpu_recoded_exp_width_gp)
     ,.sigWidth(fpu_recoded_sig_width_gp)
-  ) flw_to_RecFN (
+  ) flw_to_RecFN1 (
     .in(flw_data)
-    ,.out(flw_recoded_data)
+    ,.out(flw_recoded_data[0])
   );
 
+  fNToRecFN #(
+    .expWidth(fpu_recoded_exp_width_gp)
+    ,.sigWidth(fpu_recoded_sig_width_gp)
+  ) flw_to_RecFN2 (
+    .in(flw_wb_data_r.rf_simd_data[0])
+    ,.out(flw_recoded_data[1])
+  );
+	
+  fNToRecFN #(
+    .expWidth(fpu_recoded_exp_width_gp)
+    ,.sigWidth(fpu_recoded_sig_width_gp)
+  ) flw_to_RecFN3 (
+    .in(flw_wb_data_r.rf_simd_data[1])
+    ,.out(flw_recoded_data[2])
+  );
 
+  fNToRecFN #(
+    .expWidth(fpu_recoded_exp_width_gp)
+    ,.sigWidth(fpu_recoded_sig_width_gp)
+  ) flw_to_RecFN4 (
+    .in(flw_wb_data_r.rf_simd_data[2])
+    ,.out(flw_recoded_data[3])
+  );
+	
   //////////////////////////////
   //                          //
   //      CONTROL LOGIC       //
@@ -1647,6 +1672,7 @@ module vanilla_core
           decode: '0,
           rs1_val: '0,
           rs2_val: '0,
+	  rs2_simd_val: '0,
           mem_addr_op2: '0,
           icache_miss: 1'b0,
           branch_predicted_taken: 1'b0
@@ -1735,6 +1761,7 @@ module vanilla_core
       is_byte_op: exe_r.decode.is_byte_op,
       is_hex_op: exe_r.decode.is_hex_op,
       is_load_unsigned: exe_r.decode.is_load_unsigned,
+      is_simd_op: exe_r.is_simd_op,
       local_load: local_load_in_exe,
       byte_sel: lsu_byte_sel_lo,
       icache_miss: exe_r.icache_miss
@@ -1767,6 +1794,7 @@ module vanilla_core
         is_byte_op: 1'b0,
         is_hex_op: 1'b0,
         is_load_unsigned: 1'b0,
+	is_simd_op: 1'b0,
         local_load: 1'b0,
         byte_sel: '0,
         icache_miss: 1'b0
@@ -1909,10 +1937,12 @@ module vanilla_core
     flw_wb_data_en = ~stall_all;
     flw_wb_ctrl_n = '{
       valid: mem_ctrl_r.write_frd,
+      is_simd_op: mem_ctrl_r.is_simd_op,
       rd_addr: mem_ctrl_r.rd_addr
     };
     flw_wb_data_n = '{
-      rf_data: local_load_data_r
+      rf_data: local_load_data_r[0],
+      rf_simd_data: local_load_data_r[3:1]
     };
   end
 
@@ -1953,7 +1983,7 @@ module vanilla_core
       select_remote_flw = 1'b0;
       float_rf_wen = 1'b1;
       float_rf_waddr = flw_wb_ctrl_r.rd_addr;
-      float_rf_wdata = flw_recoded_data; 
+      float_rf_wdata = flw_recoded_data[0]; 
     end
     else if (fpu_float_v_lo) begin
       float_rf_wen = 1'b1;
@@ -1979,15 +2009,51 @@ module vanilla_core
         select_remote_flw = 1'b1;
         float_rf_wen = 1'b1;
         float_rf_waddr = float_remote_load_resp_rd_i;
-        float_rf_wdata = flw_recoded_data;
+        float_rf_wdata = flw_recoded_data[0];
         float_remote_load_resp_yumi_o = 1'b1;
 
         float_sb_clear = 1'b1;
         float_sb_clear_id = float_remote_load_resp_rd_i;
       end
-    end
+    end	  
   end
 
+  always_comb begin
+    float_rf_wen_li = 4'b0;  
+    float_rf_wdata_li = '0;
+    
+    if (flw_wb_ctrl_r.is_simd_op) begin
+      float_rf_wdata_li = flw_recoded_data;
+    end
+    else begin
+      float_rf_wdata_li = {4{float_rf_wdata}};
+    end
+    
+    if (float_rf_wen) begin
+      unique casez (float_rf_waddr[1:0])
+        2'b00: begin
+          float_rf_wen_li = 4'b0001; //0001
+        end
+        2'b01: begin
+          float_rf_wen_li = 4'b0010; //0010
+        end
+        2'b10: begin
+          float_rf_wen_li = 4'b0100; //0100
+        end
+        2'b11: begin
+          float_rf_wen_li = 4'b1000; //0001
+        end
+        default: begin
+          float_rf_wen_li = 4'b0000;
+        end
+      end    
+        
+    else begin
+      float_rf_wen_li = 4'b0000; //not enabled
+    end
+  end
+  
+	
   // fpu_float stall control
   assign stall_fpu1_li = stall_all;
   assign stall_fpu2_li = stall_remote_flw_wb;
