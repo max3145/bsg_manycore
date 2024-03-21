@@ -1972,7 +1972,7 @@ module vanilla_core
       select_remote_flw = 1'b1;
       float_rf_wen = 1'b1;
       float_rf_waddr = float_remote_load_resp_rd_i;
-      float_rf_wdata = flw_recoded_data;
+      float_rf_wdata = flw_recoded_data[0];
       float_remote_load_resp_yumi_o = 1'b1;
       stall_remote_flw_wb = flw_wb_ctrl_r.valid | fpu_float_v_lo;
 
