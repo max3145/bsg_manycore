@@ -320,9 +320,9 @@ module vanilla_core
     .clk_i(clk_i)
     ,.reset_i(reset_i)
 
-    ,.w_v_i(float_rf_wen)
+    ,.w_v_i(float_rf_wen_li)
     ,.w_addr_i(float_rf_waddr)
-    ,.w_data_i(float_rf_wdata)
+    ,.w_data_i(float_rf_wdata_li)
 
     ,.r_v_i(float_rf_read)
     ,.r_addr_i({instruction[31:27], instruction.rs2, instruction.rs1})
@@ -2029,7 +2029,7 @@ module vanilla_core
       float_rf_wdata_li = {4{float_rf_wdata}};
     end
     
-    if (float_rf_wen) begin
+    if (float_rf_wen & ~flw_wb_ctrl_r.is_simd_op) begin
       unique casez (float_rf_waddr[1:0])
         2'b00: begin
           float_rf_wen_li = 4'b0001; //0001
@@ -2047,6 +2047,10 @@ module vanilla_core
           float_rf_wen_li = 4'b0000;
         end
       end    
+        
+    else if (float_rf_wen & flw_wb_ctrl_r.is_simd_op) begin
+      float_rf_wen_li = 4'b1111;
+    end
         
     else begin
       float_rf_wen_li = 4'b0000; //not enabled
