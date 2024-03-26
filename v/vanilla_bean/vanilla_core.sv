@@ -1027,7 +1027,7 @@ module vanilla_core
   ) local_load_buffer (
     .clk_i(clk_i)
     ,.en_i(local_load_en_r)
-    ,.data_i({dmem_data_lo[3:1], dmem_mux_lo})
+    ,.data_i({dmem_mux_lo, dmem_data_lo[1], dmem_data_lo[2], dmem_data_lo[3],})
     ,.data_o(local_load_data_r)
   );
 
@@ -1036,7 +1036,7 @@ module vanilla_core
   logic [data_width_p-1:0] local_load_packed_data;
 
   load_packer local_lp (
-    .mem_data_i(dmem_mux_lo)
+    .mem_data_i(local_load_data_r[0])
     ,.unsigned_load_i(mem_ctrl_r.is_load_unsigned)
     ,.byte_load_i(mem_ctrl_r.is_byte_op)
     ,.hex_load_i(mem_ctrl_r.is_hex_op)
@@ -1142,7 +1142,7 @@ module vanilla_core
     ,.sigWidth(fpu_recoded_sig_width_gp)
   ) flw_to_RecFN1 (
     .in(flw_data)
-    ,.out(flw_recoded_data[0])
+    ,.out(flw_recoded_data[3])
   );
 
   fNToRecFN #(
@@ -1150,7 +1150,7 @@ module vanilla_core
     ,.sigWidth(fpu_recoded_sig_width_gp)
   ) flw_to_RecFN2 (
     .in(flw_wb_data_r.rf_simd_data[0])
-    ,.out(flw_recoded_data[1])
+    ,.out(flw_recoded_data[2])
   );
 	
   fNToRecFN #(
@@ -1158,7 +1158,7 @@ module vanilla_core
     ,.sigWidth(fpu_recoded_sig_width_gp)
   ) flw_to_RecFN3 (
     .in(flw_wb_data_r.rf_simd_data[1])
-    ,.out(flw_recoded_data[2])
+    ,.out(flw_recoded_data[1])
   );
 
   fNToRecFN #(
@@ -1166,7 +1166,7 @@ module vanilla_core
     ,.sigWidth(fpu_recoded_sig_width_gp)
   ) flw_to_RecFN4 (
     .in(flw_wb_data_r.rf_simd_data[2])
-    ,.out(flw_recoded_data[3])
+    ,.out(flw_recoded_data[0])
   );
 	
   //////////////////////////////
@@ -1818,6 +1818,7 @@ module vanilla_core
         2'b01: dmem_mask_li = {{2{4'b0000}}, {remote_dmem_mask_i}, {1{4'b0000}}};
         2'b10: dmem_mask_li = {{1{4'b0000}}, {remote_dmem_mask_i}, {2{4'b0000}}};
         2'b11: dmem_mask_li = {{remote_dmem_mask_i},{3{4'b0000}}};
+        default: dmem_mask_li = '0;
       endcase
       dmem_v_li = remote_dmem_v_i;
       dmem_w_li = remote_dmem_w_i;
@@ -1842,6 +1843,7 @@ module vanilla_core
         2'b01: dmem_mask_li = {{2{4'b0000}}, {remote_dmem_mask_i}, {1{4'b0000}}};
         2'b10: dmem_mask_li = {{1{4'b0000}}, {remote_dmem_mask_i}, {2{4'b0000}}};
         2'b11: dmem_mask_li = {{remote_dmem_mask_i},{3{4'b0000}}};
+        default: dmem_mask_li = '0;
       endcase
         dmem_v_li = remote_dmem_v_i;
         dmem_w_li = remote_dmem_w_i;
@@ -1952,7 +1954,7 @@ module vanilla_core
     };
     flw_wb_data_n = '{
       rf_data: local_load_data_r[0],
-      rf_simd_data: local_load_data_r[3:1]
+      rf_simd_data: {local_load_data_r[1], local_load_data_r[2], local_load_data_r[3]}
     };
   end
 
@@ -1982,7 +1984,7 @@ module vanilla_core
       select_remote_flw = 1'b1;
       float_rf_wen = 1'b1;
       float_rf_waddr = float_remote_load_resp_rd_i;
-      float_rf_wdata = flw_recoded_data[0];
+      float_rf_wdata = flw_recoded_data[3];
       float_remote_load_resp_yumi_o = 1'b1;
       stall_remote_flw_wb = flw_wb_ctrl_r.valid | fpu_float_v_lo;
 
@@ -1993,7 +1995,7 @@ module vanilla_core
       select_remote_flw = 1'b0;
       float_rf_wen = 1'b1;
       float_rf_waddr = flw_wb_ctrl_r.rd_addr;
-      float_rf_wdata = flw_recoded_data[0]; 
+      float_rf_wdata = flw_recoded_data[3]; 
     end
     else if (fpu_float_v_lo) begin
       float_rf_wen = 1'b1;
@@ -2019,7 +2021,7 @@ module vanilla_core
         select_remote_flw = 1'b1;
         float_rf_wen = 1'b1;
         float_rf_waddr = float_remote_load_resp_rd_i;
-        float_rf_wdata = flw_recoded_data[0];
+        float_rf_wdata = flw_recoded_data[3];
         float_remote_load_resp_yumi_o = 1'b1;
 
         float_sb_clear = 1'b1;
