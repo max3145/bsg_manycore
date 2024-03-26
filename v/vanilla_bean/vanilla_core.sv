@@ -980,7 +980,7 @@ module vanilla_core
   logic [3:0][data_width_p-1:0] dmem_data_lo;
 
   bsg_mem_1rw_sync_mask_write_byte #(
-    .els_p(dmem_size_p)
+    .els_p(dmem_size_p>>2)
     ,.data_width_p(4*data_width_p)
     ,.latch_last_read_p(1)
   ) dmem (
@@ -988,7 +988,7 @@ module vanilla_core
     ,.reset_i(reset_i)
     ,.v_i(dmem_v_li)
     ,.w_i(dmem_w_li)
-    ,.addr_i(dmem_addr_li[31:2])
+    ,.addr_i(dmem_addr_li[9:2])
     ,.data_i(dmem_data_li)
     ,.write_mask_i(dmem_mask_li)
     ,.data_o(dmem_data_lo)
@@ -1761,7 +1761,7 @@ module vanilla_core
       is_byte_op: exe_r.decode.is_byte_op,
       is_hex_op: exe_r.decode.is_hex_op,
       is_load_unsigned: exe_r.decode.is_load_unsigned,
-      is_simd_op: exe_r.is_simd_op,
+      is_simd_op: exe_r.decode.is_simd_op,
       local_load: local_load_in_exe,
       byte_sel: lsu_byte_sel_lo,
       icache_miss: exe_r.icache_miss
@@ -1813,11 +1813,16 @@ module vanilla_core
   // DMEM ctrl logic
   always_comb begin
     if (stall_all) begin
+      unique casez (remote_dmem_addr_i[1:0])
+        2'b00: dmem_mask_li = {{3{4'b0000}}, {remote_dmem_mask_i}};
+        2'b01: dmem_mask_li = {{2{4'b0000}}, {remote_dmem_mask_i}, {1{4'b0000}}};
+        2'b10: dmem_mask_li = {{1{4'b0000}}, {remote_dmem_mask_i}, {2{4'b0000}}};
+        2'b11: dmem_mask_li = {{remote_dmem_mask_i},{3{4'b0000}}};
+      endcase
       dmem_v_li = remote_dmem_v_i;
       dmem_w_li = remote_dmem_w_i;
       dmem_addr_li = remote_dmem_addr_i;
-      dmem_data_li = remote_dmem_data_i;
-      dmem_mask_li = remote_dmem_mask_i;
+      dmem_data_li = {4{remote_dmem_data_i}};
       remote_dmem_yumi_o = remote_dmem_v_i;
       local_load_en = 1'b0;
     end
@@ -1832,11 +1837,16 @@ module vanilla_core
         local_load_en = ~lsu_dmem_w_lo;
       end
       else begin
+      unique casez (remote_dmem_addr_i[1:0])
+        2'b00: dmem_mask_li = {{3{4'b0000}}, {remote_dmem_mask_i}};
+        2'b01: dmem_mask_li = {{2{4'b0000}}, {remote_dmem_mask_i}, {1{4'b0000}}};
+        2'b10: dmem_mask_li = {{1{4'b0000}}, {remote_dmem_mask_i}, {2{4'b0000}}};
+        2'b11: dmem_mask_li = {{remote_dmem_mask_i},{3{4'b0000}}};
+      endcase
         dmem_v_li = remote_dmem_v_i;
         dmem_w_li = remote_dmem_w_i;
         dmem_addr_li = remote_dmem_addr_i;
-        dmem_data_li = remote_dmem_data_i;
-        dmem_mask_li = remote_dmem_mask_i;
+        dmem_data_li = {4{remote_dmem_data_i}};
         remote_dmem_yumi_o = remote_dmem_v_i;
         local_load_en = 1'b0;
       end
@@ -2043,18 +2053,13 @@ module vanilla_core
         2'b11: begin
           float_rf_wen_li = 4'b1000; //0001
         end
-        default: begin
-          float_rf_wen_li = 4'b0000;
-        end
+        endcase
       end    
         
     else if (float_rf_wen & flw_wb_ctrl_r.is_simd_op) begin
       float_rf_wen_li = 4'b1111;
     end
-        
-    else begin
-      float_rf_wen_li = 4'b0000; //not enabled
-    end
+
   end
   
 	

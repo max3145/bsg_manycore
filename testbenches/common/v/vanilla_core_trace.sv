@@ -32,7 +32,7 @@ module vanilla_core_trace
     , input lsu_dmem_v_lo
     , input lsu_dmem_w_lo
     , input [dmem_addr_width_lp-1:0] lsu_dmem_addr_lo
-    , input [data_width_p-1:0] lsu_dmem_data_lo
+    , input [3:0][data_width_p-1:0] lsu_dmem_data_lo
     , input [data_width_p-1:0] local_load_packed_data
 
     , input remote_req_s remote_req_o
@@ -61,9 +61,10 @@ module vanilla_core_trace
     logic branch_or_jump;
     logic [RV32_instr_width_gp-1:0] btarget;
     logic is_local_load;
+    logic is_simd_op;
     logic is_local_store;
     logic [dmem_addr_width_lp-1:0] local_dmem_addr;
-    logic [RV32_reg_data_width_gp-1:0] local_store_data;
+    logic [3:0][RV32_reg_data_width_gp-1:0] local_store_data;
     logic is_remote_load;
     logic is_remote_store;
     logic [RV32_reg_data_width_gp-1:0] remote_addr;
@@ -78,9 +79,10 @@ module vanilla_core_trace
     logic branch_or_jump;
     logic [RV32_instr_width_gp-1:0] btarget;
     logic is_local_load;
+    logic is_simd_op;
     logic is_local_store;
     logic [dmem_addr_width_lp-1:0] local_dmem_addr;
-    logic [RV32_reg_data_width_gp-1:0] local_store_data;
+    logic [3:0][RV32_reg_data_width_gp-1:0] local_store_data;
     logic is_remote_load;
     logic is_remote_store;
     logic [RV32_reg_data_width_gp-1:0] remote_addr;
@@ -94,10 +96,11 @@ module vanilla_core_trace
     logic branch_or_jump;
     logic [RV32_instr_width_gp-1:0] btarget;
     logic is_local_load;
+    logic is_simd_op;
     logic is_local_store;
     logic [dmem_addr_width_lp-1:0] local_dmem_addr;
     logic [RV32_reg_data_width_gp-1:0] local_load_data;
-    logic [RV32_reg_data_width_gp-1:0] local_store_data;
+    logic [3:0][RV32_reg_data_width_gp-1:0] local_store_data;
     logic is_remote_load;
     logic is_remote_store;
     logic [RV32_reg_data_width_gp-1:0] remote_addr;
@@ -115,6 +118,7 @@ module vanilla_core_trace
   assign exe_debug.btarget = {{(32-2-pc_width_lp){1'b0}}, pc_n, 2'b00};
 
   assign exe_debug.is_local_load = lsu_dmem_v_lo & ~lsu_dmem_w_lo;
+  assign exe_debug.is_simd_op = exe_r.decode.is_simd_op;
   assign exe_debug.is_local_store = lsu_dmem_v_lo & lsu_dmem_w_lo;
   assign exe_debug.local_dmem_addr = lsu_dmem_addr_lo;
   assign exe_debug.local_store_data = lsu_dmem_data_lo;
@@ -140,6 +144,7 @@ module vanilla_core_trace
           btarget: exe_debug.btarget,
 
           is_local_load: exe_debug.is_local_load,
+          is_simd_op: exe_debug.is_simd_op,
           is_local_store: exe_debug.is_local_store,
           local_dmem_addr: exe_debug.local_dmem_addr,
           local_store_data: exe_debug.local_store_data,
@@ -157,7 +162,8 @@ module vanilla_core_trace
           btarget: mem_debug.btarget,
 
           is_local_load: mem_debug.is_local_load,
-          is_local_store: mem_debug.is_local_store,
+          is_simd_op: mem_debug.is_simd_op,
+          is_local_store: exe_debug.is_local_store,
           local_dmem_addr: mem_debug.local_dmem_addr,
           local_store_data: mem_debug.local_store_data,
           local_load_data: local_load_packed_data,
