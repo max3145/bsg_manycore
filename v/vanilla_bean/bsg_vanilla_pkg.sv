@@ -258,6 +258,7 @@ typedef struct packed {
     logic is_load_unsigned;
     logic is_simd_op;
     logic local_load;
+    logic [1:0] dmem_addr;
     logic [1:0] byte_sel;
     logic icache_miss;
 } mem_ctrl_signals_s;
@@ -289,7 +290,6 @@ typedef struct packed {
 typedef struct packed {
   logic [fpu_recoded_data_width_gp-1:0] rs1_val;
   logic [fpu_recoded_data_width_gp-1:0] rs2_val;
-  logic [(fpu_recoded_data_width_gp*3)-1:0] rs2_simd_val;
   logic [fpu_recoded_data_width_gp-1:0] rs3_val;
 } fp_exe_data_signals_s;
 
@@ -302,7 +302,7 @@ typedef struct packed {
 
 typedef struct packed {
     logic [RV32_reg_data_width_gp-1:0] rf_data;
-    logic [(RV32_reg_data_width_gp*3)-1:0] rf_simd_data;
+    logic [2:0][RV32_reg_data_width_gp-1:0] rf_simd_data;
 } flw_wb_data_signals_s;
 
 

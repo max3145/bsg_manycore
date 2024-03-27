@@ -67,7 +67,7 @@ module lsu
   //
   logic [data_width_p-1:0] store_data;
   logic [data_mask_width_lp-1:0] store_mask;
-  logic [3:0][data_width_p-1:0] store_simd_mask;
+  logic [3:0][data_mask_width_lp-1:0] store_simd_mask;
   logic [3:0][data_width_p-1:0] store_simd_data;
   
   always_comb begin
