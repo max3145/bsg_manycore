@@ -974,6 +974,7 @@ module vanilla_core
 
   logic dmem_v_li;
   logic dmem_w_li;
+  logic [1:0] dmem_mux_out;
   logic [3:0][data_width_p-1:0] dmem_data_li;
   logic [dmem_addr_width_lp-1:0] dmem_addr_li;
   logic [3:0][data_mask_width_lp-1:0] dmem_mask_li;
@@ -1001,7 +1002,8 @@ module vanilla_core
     ,.width_p(data_width_p)
   ) mem_out_mux (
     .data_i(dmem_data_lo)
-    ,.sel_i(dmem_addr_li[1:0])
+    ,.sel_i(mem_ctrl_r.dmem_addr)
+ //   ,.sel_i(dmem_mux_out)
     ,.data_o(dmem_mux_lo)
   );
 	
@@ -1027,9 +1029,20 @@ module vanilla_core
   ) local_load_buffer (
     .clk_i(clk_i)
     ,.en_i(local_load_en_r)
-    ,.data_i({dmem_mux_lo, dmem_data_lo[1], dmem_data_lo[2], dmem_data_lo[3],})
+    ,.data_i({dmem_data_lo[3], dmem_data_lo[2], dmem_data_lo[1], dmem_mux_lo})
     ,.data_o(local_load_data_r)
   );
+
+  bsg_dff_en_bypass #(
+    .width_p(2)
+  ) mem_mux_buffer (
+    .clk_i(clk_i)
+    ,.en_i(mem_mux_buffer_en)
+  //  ,.en_i(local_load_en_r)
+    ,.data_i(mem_ctrl_r.dmem_addr)
+    ,.data_o(dmem_mux_out)
+  );
+
 
   // local load packer
   //
@@ -1762,6 +1775,7 @@ module vanilla_core
       is_hex_op: exe_r.decode.is_hex_op,
       is_load_unsigned: exe_r.decode.is_load_unsigned,
       is_simd_op: exe_r.decode.is_simd_op,
+      dmem_addr: lsu_dmem_addr_lo[1:0],
       local_load: local_load_in_exe,
       byte_sel: lsu_byte_sel_lo,
       icache_miss: exe_r.icache_miss
@@ -1772,7 +1786,6 @@ module vanilla_core
 
     fcsr_fflags_v_li[0] = 1'b0;
     fcsr_fflags_li[0] = fpu_int_fflags_lo;
-
     if (stall_all) begin
       mem_ctrl_en = 1'b0;
       mem_data_en = 1'b0;
@@ -1795,6 +1808,7 @@ module vanilla_core
         is_hex_op: 1'b0,
         is_load_unsigned: 1'b0,
 	is_simd_op: 1'b0,
+        dmem_addr: '0,
         local_load: 1'b0,
         byte_sel: '0,
         icache_miss: 1'b0
@@ -1813,6 +1827,7 @@ module vanilla_core
   // DMEM ctrl logic
   always_comb begin
     if (stall_all) begin
+      if (remote_dmem_v_i) begin
       unique casez (remote_dmem_addr_i[1:0])
         2'b00: dmem_mask_li = {{3{4'b0000}}, {remote_dmem_mask_i}};
         2'b01: dmem_mask_li = {{2{4'b0000}}, {remote_dmem_mask_i}, {1{4'b0000}}};
@@ -1820,6 +1835,8 @@ module vanilla_core
         2'b11: dmem_mask_li = {{remote_dmem_mask_i},{3{4'b0000}}};
         default: dmem_mask_li = '0;
       endcase
+      end
+
       dmem_v_li = remote_dmem_v_i;
       dmem_w_li = remote_dmem_w_i;
       dmem_addr_li = remote_dmem_addr_i;
@@ -1838,6 +1855,7 @@ module vanilla_core
         local_load_en = ~lsu_dmem_w_lo;
       end
       else begin
+      if (remote_dmem_v_i) begin
       unique casez (remote_dmem_addr_i[1:0])
         2'b00: dmem_mask_li = {{3{4'b0000}}, {remote_dmem_mask_i}};
         2'b01: dmem_mask_li = {{2{4'b0000}}, {remote_dmem_mask_i}, {1{4'b0000}}};
@@ -1845,6 +1863,7 @@ module vanilla_core
         2'b11: dmem_mask_li = {{remote_dmem_mask_i},{3{4'b0000}}};
         default: dmem_mask_li = '0;
       endcase
+      end
         dmem_v_li = remote_dmem_v_i;
         dmem_w_li = remote_dmem_w_i;
         dmem_addr_li = remote_dmem_addr_i;
@@ -2069,6 +2088,8 @@ module vanilla_core
   assign stall_fpu1_li = stall_all;
   assign stall_fpu2_li = stall_remote_flw_wb;
 
+  //assign mem_mux_buffer_en = (int_rf_wen | float_rf_wen) & dmem_v_li & dmem_w_li;
+  assign mem_mux_buffer_en = exe_r.decode.is_store_op;
 
 
 
