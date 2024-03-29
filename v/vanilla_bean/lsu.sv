@@ -48,7 +48,8 @@ module lsu
     , output logic dmem_w_o
     , output logic [dmem_addr_width_lp-1:0] dmem_addr_o
     , output logic [3:0][data_width_p-1:0] dmem_data_o
-    , output logic [3:0][data_mask_width_lp-1:0] dmem_mask_o 
+//    , output logic [3:0][data_mask_width_lp-1:0] dmem_mask_o 
+    , output logic [data_mask_width_lp-1:0] dmem_mask_o 
 
     , output logic reserve_o
     , output logic [1:0] byte_sel_o 
@@ -120,7 +121,6 @@ module lsu
       endcase
     end
   end 
-  
   // to local DMEM
   //
   wire is_local_dmem_addr = (mem_addr ==? 32'b00000000_00000000_0000????_????????);
@@ -131,7 +131,8 @@ module lsu
   assign dmem_w_o = exe_decode_i.is_store_op;
   assign dmem_addr_o = mem_addr[2+:dmem_addr_width_lp]; 
   assign dmem_data_o = store_simd_data;
-  assign dmem_mask_o = store_simd_mask;
+//  assign dmem_mask_o = store_simd_mask;
+  assign dmem_mask_o = store_mask;
 
   assign byte_sel_o = mem_addr[1:0];
 

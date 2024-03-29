@@ -738,7 +738,8 @@ module vanilla_core
   logic lsu_dmem_w_lo;
   logic [dmem_addr_width_lp-1:0] lsu_dmem_addr_lo;
   logic [3:0][data_width_p-1:0] lsu_dmem_data_lo;
-  logic [3:0][data_mask_width_lp-1:0] lsu_dmem_mask_lo;
+//  logic [3:0][data_mask_width_lp-1:0] lsu_dmem_mask_lo;
+  logic [data_mask_width_lp-1:0] lsu_dmem_mask_lo_n;
   logic lsu_reserve_lo;
   logic [1:0] lsu_byte_sel_lo;
 
@@ -765,7 +766,7 @@ module vanilla_core
     ,.dmem_w_o(lsu_dmem_w_lo)
     ,.dmem_addr_o(lsu_dmem_addr_lo)
     ,.dmem_data_o(lsu_dmem_data_lo)
-    ,.dmem_mask_o(lsu_dmem_mask_lo)
+    ,.dmem_mask_o(lsu_dmem_mask_lo_n)
 
     ,.reserve_o(lsu_reserve_lo)
 
@@ -975,6 +976,7 @@ module vanilla_core
   logic dmem_v_li;
   logic dmem_w_li;
   logic [1:0] dmem_mux_out;
+  logic [15:0] dmem_mask_out;
   logic [3:0][data_width_p-1:0] dmem_data_li;
   logic [dmem_addr_width_lp-1:0] dmem_addr_li;
   logic [3:0][data_mask_width_lp-1:0] dmem_mask_li;
@@ -1002,12 +1004,33 @@ module vanilla_core
     ,.width_p(data_width_p)
   ) mem_out_mux (
     .data_i(dmem_data_lo)
-    ,.sel_i(mem_ctrl_r.dmem_addr)
- //   ,.sel_i(dmem_mux_out)
+//    ,.sel_i(mem_ctrl_r.dmem_addr)
+    ,.sel_i(dmem_mux_out)
     ,.data_o(dmem_mux_lo)
   );
 	
   assign remote_dmem_data_o = dmem_mux_lo;
+
+  logic mem_mux_buffer_en; 
+  bsg_dff_en_bypass #(
+    .width_p(2)
+  ) mem_mux_buffer (
+    .clk_i(clk_i)
+    ,.en_i(mem_mux_buffer_en)
+  //  ,.en_i(local_load_en_r)
+    ,.data_i(mem_ctrl_r.dmem_addr[1:0])
+    ,.data_o(dmem_mux_out)
+  );
+  
+  logic [15:0] store_simd_mask;
+  bsg_dff_en_bypass #(
+    .width_p(4*data_mask_width_lp)
+  ) mem_mask_buffer (
+    .clk_i(clk_i)
+    ,.en_i(mem_mask_buffer_en)
+    ,.data_i(store_simd_mask)
+    ,.data_o(dmem_mask_out)
+  );
 
   // local load buffer
   //
@@ -1032,17 +1055,6 @@ module vanilla_core
     ,.data_i({dmem_data_lo[3], dmem_data_lo[2], dmem_data_lo[1], dmem_mux_lo})
     ,.data_o(local_load_data_r)
   );
-
-  bsg_dff_en_bypass #(
-    .width_p(2)
-  ) mem_mux_buffer (
-    .clk_i(clk_i)
-    ,.en_i(mem_mux_buffer_en)
-  //  ,.en_i(local_load_en_r)
-    ,.data_i(mem_ctrl_r.dmem_addr)
-    ,.data_o(dmem_mux_out)
-  );
-
 
   // local load packer
   //
@@ -1850,7 +1862,8 @@ module vanilla_core
         dmem_w_li = lsu_dmem_w_lo;
         dmem_addr_li = lsu_dmem_addr_lo;
         dmem_data_li = lsu_dmem_data_lo;
-        dmem_mask_li = lsu_dmem_mask_lo;
+  //      dmem_mask_li = lsu_dmem_mask_lo;
+        dmem_mask_li = dmem_mask_out;
         remote_dmem_yumi_o = 1'b0;
         local_load_en = ~lsu_dmem_w_lo;
       end
@@ -2084,13 +2097,40 @@ module vanilla_core
   end
   
 	
+  always_comb begin
+    if (exe_r.decode.is_simd_op) begin
+      store_simd_mask = {{4{lsu_dmem_mask_lo_n}}};
+    end
+    else begin
+      unique casez (dmem_mux_out)
+        2'b00: begin
+          store_simd_mask = {{3{4'b0000}}, {lsu_dmem_mask_lo_n}}; //only store [0]
+        end
+        2'b01: begin
+          store_simd_mask = {{2{4'b0000}}, {lsu_dmem_mask_lo_n}, {1{4'b0000}}}; //only store [1] element
+        end
+        2'b10: begin
+          store_simd_mask = {{1{4'b0000}}, {lsu_dmem_mask_lo_n}, {2{4'b0000}}}; //only store [2] element
+        end
+        2'b11: begin
+          store_simd_mask = {{lsu_dmem_mask_lo_n},{3{4'b0000}}}; // only store [3] element
+        end
+        default: begin
+          store_simd_mask = 16'b0000000000000000;
+        end
+      endcase
+    end
+  end 
+
   // fpu_float stall control
   assign stall_fpu1_li = stall_all;
   assign stall_fpu2_li = stall_remote_flw_wb;
 
   //assign mem_mux_buffer_en = (int_rf_wen | float_rf_wen) & dmem_v_li & dmem_w_li;
+  //assign mem_mux_buffer_en = exe_r.decode.is_store_op;
   assign mem_mux_buffer_en = exe_r.decode.is_store_op;
 
+  assign mem_mask_buffer_en = exe_r.decode.is_store_op | exe_r.decode.is_load_op;
 
 
 
