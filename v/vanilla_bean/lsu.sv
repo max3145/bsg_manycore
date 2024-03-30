@@ -47,7 +47,6 @@ module lsu
     , output logic dmem_v_o
     , output logic dmem_w_o
     , output logic [dmem_addr_width_lp-1:0] dmem_addr_o
-    , output logic [dmem_addr_width_lp-1:0] dmem_addr_li
     , output logic [3:0][data_width_p-1:0] dmem_data_o
     , output logic [3:0][data_mask_width_lp-1:0] dmem_mask_o 
 
@@ -60,23 +59,10 @@ module lsu
 
   logic [data_width_p-1:0] mem_addr;
   logic [data_width_p-1:0] miss_addr;
-  logic [dmem_addr_width_lp-1:0] dmem_addr_li;
 
   assign mem_addr = exe_rs1_i + `BSG_SIGN_EXTEND(mem_offset_i, data_width_p);
   assign miss_addr = (pc_plus4_i - 'h4) | bsg_dram_npa_prefix_gp;
   
-  logic mem_addr_buffer_en;
-  assign mem_addr_buffer_en = (exe_decode_i.is_load_op | exe_decode_i.is_store_op | exe_decode_i.is_fp_op);
-
-  bsg_dff_en_bypass #(
-    .width_p(dmem_addr_width_lp)
-  ) mem_addr_buffer (
-    .clk_i(clk_i)
-    ,.en_i(mem_addr_buffer_en)
-    ,.data_i(dmem_addr_li)
-    ,.data_o(dmem_addr_o)
-  );
-
   // store data mask
   //
   logic [data_width_p-1:0] store_data;
@@ -142,7 +128,7 @@ module lsu
     (exe_decode_i.is_load_op | exe_decode_i.is_store_op |
      exe_decode_i.is_lr_op | exe_decode_i.is_lr_aq_op);
   assign dmem_w_o = exe_decode_i.is_store_op;
-  assign dmem_addr_li = mem_addr[2+:dmem_addr_width_lp]; 
+  assign dmem_addr_o = mem_addr[2+:dmem_addr_width_lp]; 
   assign dmem_data_o = store_simd_data;
   assign dmem_mask_o = store_simd_mask;
 
