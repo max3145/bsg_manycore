@@ -133,6 +133,7 @@ module vanilla_core
   id_signals_s id_r, id_n;
   exe_signals_s exe_r, exe_n;
   mem_ctrl_signals_s mem_ctrl_r, mem_ctrl_n;
+  mem_mux_ctrl_signals_s mem_mux_ctrl_r, mem_mux_ctrl_n;
   mem_data_signals_s mem_data_r, mem_data_n;
   wb_ctrl_signals_s wb_ctrl_r, wb_ctrl_n;
   wb_data_signals_s wb_data_r, wb_data_n;
@@ -963,6 +964,16 @@ module vanilla_core
     ,.data_o(mem_ctrl_r)
   );
 
+  bsg_dff_reset_en #(
+    .width_p($bits(mem_mux_ctrl_signals_s))
+  ) mem_mux_ctrl_pipeline (
+    .clk_i(clk_i)
+    ,.reset_i(reset_i)
+    ,.en_i(1'b1)
+    ,.data_i(mem_mux_ctrl_n)
+    ,.data_o(mem_mux_ctrl_r)
+  );
+
   bsg_dff_en #(
     .width_p($bits(mem_data_signals_s))
   ) mem_data_pipeline (
@@ -997,18 +1008,28 @@ module vanilla_core
   //output from dmem mux
   logic [data_width_p-1:0] dmem_mux_lo;
 
-  logic [1:0] mem_mux_addr;
+  logic [1:0] mem_mux_sel;
+
+  bsg_dff_en_bypass #(
+    .width_p(2)
+  ) mux_addr_buffer (
+    .clk_i(clk_i)
+   //seemingly correct, but to ensure we should likely need the commented out code here instead. Point1
+    ,.en_i((~mem_mux_ctrl_r.dmem_w_li))
+    ,.data_i(mem_mux_ctrl_r.dmem_addr)
+    ,.data_o(mem_mux_sel)
+  );
 
   bsg_mux #(
     .els_p(4)
     ,.width_p(data_width_p)
   ) mem_out_mux (
     .data_i(dmem_data_lo)
-//    ,.sel_i(mem_mux_addr)
-    ,.sel_i(mem_ctrl_r.dmem_addr)
+    ,.sel_i(mem_mux_sel)
     ,.data_o(dmem_mux_lo)
   );
 	
+
   assign remote_dmem_data_o = dmem_mux_lo;
 
 
@@ -1755,15 +1776,14 @@ module vanilla_core
     ? fp_exe_ctrl_r.rd
     : exe_r.instruction.rd;
 
-  assign mem_mux_addr = (remote_dmem_v_i | mem_ctrl_r.remote_dmem_v_i)
-//  assign mem_mux_addr = ((remote_dmem_v_i | mem_ctrl_r.remote_dmem_v_i) & ~dmem_w_li)
-    ? mem_ctrl_r.remote_dmem_addr
-    : mem_ctrl_r.dmem_addr;
-
-  
+ //Point1 
   // EXE,FP_EXE -> MEM
   always_comb begin
     // common case
+    mem_mux_ctrl_n = '{
+      dmem_w_li: dmem_w_li,
+      dmem_addr: dmem_addr_li[1:0]
+    };
     mem_ctrl_n = '{
       rd_addr: exe_r.instruction.rd,
       write_rd: exe_r.decode.write_rd,
@@ -1772,9 +1792,6 @@ module vanilla_core
       is_hex_op: exe_r.decode.is_hex_op,
       is_load_unsigned: exe_r.decode.is_load_unsigned,
       is_simd_op: exe_r.decode.is_simd_op,
-      remote_dmem_v_i: remote_dmem_v_i,
-      dmem_addr: lsu_dmem_addr_lo[1:0],
-      remote_dmem_addr: remote_dmem_addr_i[1:0],
       local_load: local_load_in_exe,
       byte_sel: lsu_byte_sel_lo,
       icache_miss: exe_r.icache_miss
@@ -1807,9 +1824,6 @@ module vanilla_core
         is_hex_op: 1'b0,
         is_load_unsigned: 1'b0,
 	is_simd_op: 1'b0,
-        remote_dmem_v_i: 1'b0,
-        dmem_addr: '0,
-        remote_dmem_addr: '0,
         local_load: 1'b0,
         byte_sel: '0,
         icache_miss: 1'b0
@@ -1828,7 +1842,6 @@ module vanilla_core
   // DMEM ctrl logic
   always_comb begin
     if (stall_all) begin
-      if (remote_dmem_v_i) begin
       
       unique casez (remote_dmem_addr_i[1:0])
         2'b00: dmem_mask_li = {{3{4'b0000}}, {remote_dmem_mask_i}};
@@ -1837,7 +1850,6 @@ module vanilla_core
         2'b11: dmem_mask_li = {{remote_dmem_mask_i},{3{4'b0000}}};
         default: dmem_mask_li = '0;
       endcase
-      end
 
       dmem_v_li = remote_dmem_v_i;
       dmem_w_li = remote_dmem_w_i;
@@ -1857,7 +1869,6 @@ module vanilla_core
         local_load_en = ~lsu_dmem_w_lo;
       end
       else begin
-      if (remote_dmem_v_i) begin
       unique casez (remote_dmem_addr_i[1:0])
         2'b00: dmem_mask_li = {{3{4'b0000}}, {remote_dmem_mask_i}};
         2'b01: dmem_mask_li = {{2{4'b0000}}, {remote_dmem_mask_i}, {1{4'b0000}}};
@@ -1865,7 +1876,6 @@ module vanilla_core
         2'b11: dmem_mask_li = {{remote_dmem_mask_i},{3{4'b0000}}};
         default: dmem_mask_li = '0;
       endcase
-      end
         dmem_v_li = remote_dmem_v_i;
         dmem_w_li = remote_dmem_w_i;
         dmem_addr_li = remote_dmem_addr_i;

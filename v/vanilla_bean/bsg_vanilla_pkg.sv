@@ -258,12 +258,14 @@ typedef struct packed {
     logic is_load_unsigned;
     logic is_simd_op;
     logic local_load;
-    logic remote_dmem_v_i;
-    logic [1:0] dmem_addr;
-    logic [1:0] remote_dmem_addr;
     logic [1:0] byte_sel;
     logic icache_miss;
 } mem_ctrl_signals_s;
+
+typedef struct packed {
+    logic dmem_w_li;
+    logic [1:0] dmem_addr;
+} mem_mux_ctrl_signals_s;
 
 typedef struct packed {
     logic [RV32_reg_data_width_gp-1:0] exe_result;
