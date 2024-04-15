@@ -174,6 +174,7 @@ VSOURCES += $(BSG_MANYCORE_DIR)/v/vanilla_bean/idiv.sv
 VSOURCES += $(BSG_MANYCORE_DIR)/v/vanilla_bean/load_packer.sv
 VSOURCES += $(BSG_MANYCORE_DIR)/v/vanilla_bean/lsu.sv
 VSOURCES += $(BSG_MANYCORE_DIR)/v/vanilla_bean/regfile.sv
+VSOURCES += $(BSG_MANYCORE_DIR)/v/vanilla_bean/simd_regfile.sv
 VSOURCES += $(BSG_MANYCORE_DIR)/v/vanilla_bean/regfile_synth.sv
 VSOURCES += $(BSG_MANYCORE_DIR)/v/vanilla_bean/regfile_hard.sv
 VSOURCES += $(BSG_MANYCORE_DIR)/v/vanilla_bean/scoreboard.sv

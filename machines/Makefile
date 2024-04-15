@@ -24,9 +24,9 @@ include arch_filelist.mk
 include sim_filelist.mk
 
 include Makefile.vcs
-include Makefile.verilator
-include Makefile.surelog
-include Makefile.xcelium
+#include Makefile.verilator
+#include Makefile.surelog
+#include Makefile.xcelium
 
 clean:
 	rm -rf */csrc*
