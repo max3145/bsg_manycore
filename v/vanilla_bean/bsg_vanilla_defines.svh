@@ -238,8 +238,8 @@
 `define RV32_FLW_S `RV32_Itype(`RV32_LOAD_FP, 3'b010)
 `define RV32_FSW_S `RV32_Stype(`RV32_STORE_FP, 3'b010)
 
-`define RV32_FLS_S `RV32_Itype(`RV32_LOAD_FP, 3'b011)
-`define RV32_FSS_S `RV32_Stype(`RV32_STORE_FP, 3'b011)
+`define RV32_FLS_S `RV32_Itype(`RV32_LOAD_FP, 3'b101)
+`define RV32_FSS_S `RV32_Stype(`RV32_STORE_FP, 3'b101)
 
 `define RV32_FMADD_S   {5'b?????, 2'b00, 5'b?????, 5'b?????, 3'b???, 5'b?????, 7'b1000011}
 `define RV32_FMSUB_S   {5'b?????, 2'b00, 5'b?????, 5'b?????, 3'b???, 5'b?????, 7'b1000111}

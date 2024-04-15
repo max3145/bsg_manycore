@@ -1168,7 +1168,7 @@ module vanilla_core
     ,.sigWidth(fpu_recoded_sig_width_gp)
   ) flw_to_RecFN1 (
     .in(flw_data)
-    ,.out(flw_recoded_data[3])
+    ,.out(flw_recoded_data[0])
   );
 
   fNToRecFN #(
@@ -1176,7 +1176,7 @@ module vanilla_core
     ,.sigWidth(fpu_recoded_sig_width_gp)
   ) flw_to_RecFN2 (
     .in(flw_wb_data_r.rf_simd_data[0])
-    ,.out(flw_recoded_data[2])
+    ,.out(flw_recoded_data[1])
   );
 	
   fNToRecFN #(
@@ -1184,7 +1184,7 @@ module vanilla_core
     ,.sigWidth(fpu_recoded_sig_width_gp)
   ) flw_to_RecFN3 (
     .in(flw_wb_data_r.rf_simd_data[1])
-    ,.out(flw_recoded_data[1])
+    ,.out(flw_recoded_data[2])
   );
 
   fNToRecFN #(
@@ -1192,7 +1192,7 @@ module vanilla_core
     ,.sigWidth(fpu_recoded_sig_width_gp)
   ) flw_to_RecFN4 (
     .in(flw_wb_data_r.rf_simd_data[2])
-    ,.out(flw_recoded_data[0])
+    ,.out(flw_recoded_data[3])
   );
 	
   //////////////////////////////
@@ -2015,7 +2015,7 @@ module vanilla_core
       select_remote_flw = 1'b1;
       float_rf_wen = 1'b1;
       float_rf_waddr = float_remote_load_resp_rd_i;
-      float_rf_wdata = flw_recoded_data[3];
+      float_rf_wdata = flw_recoded_data[0];
       float_remote_load_resp_yumi_o = 1'b1;
       stall_remote_flw_wb = flw_wb_ctrl_r.valid | fpu_float_v_lo;
 
@@ -2026,7 +2026,7 @@ module vanilla_core
       select_remote_flw = 1'b0;
       float_rf_wen = 1'b1;
       float_rf_waddr = flw_wb_ctrl_r.rd_addr;
-      float_rf_wdata = flw_recoded_data[3]; 
+      float_rf_wdata = flw_recoded_data[0]; 
     end
     else if (fpu_float_v_lo) begin
       float_rf_wen = 1'b1;
@@ -2052,7 +2052,7 @@ module vanilla_core
         select_remote_flw = 1'b1;
         float_rf_wen = 1'b1;
         float_rf_waddr = float_remote_load_resp_rd_i;
-        float_rf_wdata = flw_recoded_data[3];
+        float_rf_wdata = flw_recoded_data[0];
         float_remote_load_resp_yumi_o = 1'b1;
 
         float_sb_clear = 1'b1;
