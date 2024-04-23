@@ -24,6 +24,7 @@ module scoreboard
 
     , input [num_src_port_p-1:0] op_reads_rf_i
     , input op_writes_rf_i
+    , input is_simd_op
 
     , input score_i
     , input [id_width_lp-1:0] score_id_i
@@ -103,6 +104,11 @@ module scoreboard
         // register is cleared.
         if(score_bits[i]) begin
           scoreboard_r[i] <= 1'b1;
+          if(is_simd_op) begin
+            scoreboard_r[i+1] <= 1'b1;
+            scoreboard_r[i+2] <= 1'b1;
+            scoreboard_r[i+3] <= 1'b1;
+          end
         end
         else if (clear_combined[i]) begin
           scoreboard_r[i] <= 1'b0;
@@ -123,7 +129,23 @@ module scoreboard
   for (genvar i = 0; i < num_src_port_p; i++) begin
     assign rs_depend_on_sb[i] = scoreboard_r[src_id_i[i]] & op_reads_rf_i[i];
   end
-  
+
+  logic rs_depend_on_sb_simd;
+//  logic rs_depend_on_sb_simd1;
+//  logic rs_depend_on_sb_simd2;
+//  logic rs_depend_on_sb_simd3;
+
+  always_comb begin
+    if(is_simd_op) begin
+      rs_depend_on_sb_simd = (scoreboard_r[src_id_i[1] + 1] & op_reads_rf_i[1]) | (scoreboard_r[src_id_i[1] + 2] & op_reads_rf_i[1]) | (scoreboard_r[src_id_i[1] + 3] & op_reads_rf_i[1]);
+    //  assign rs_depend_on_sb_simd1 = (scoreboard_r[src_id_i[1] + 1] & op_reads_rf_i[1]);
+    //  assign rs_depend_on_sb_simd2 = (scoreboard_r[src_id_i[1] + 2] & op_reads_rf_i[1]);
+    //  assign rs_depend_on_sb_simd3 = (scoreboard_r[src_id_i[1] + 3] & op_reads_rf_i[1]);
+    end
+    else begin
+      rs_depend_on_sb_simd = 1'b0;
+    end
+  end 
   assign rd_depend_on_sb = scoreboard_r[dest_id_i] & op_writes_rf_i;
 
   // find which matches on clear_id.
@@ -171,7 +193,7 @@ module scoreboard
   wire depend_on_sb = |({rd_depend_on_sb, rs_depend_on_sb} & ~{rd_on_clear_combined, rs_on_clear_combined});
   wire depend_on_score = |{rd_depend_on_score, rs_depend_on_score};
 
-  assign dependency_o = depend_on_sb | (depend_on_score & score_i & allow_zero);
+  assign dependency_o = depend_on_sb | (depend_on_score & score_i & allow_zero) | rs_depend_on_sb_simd;
 
 
 

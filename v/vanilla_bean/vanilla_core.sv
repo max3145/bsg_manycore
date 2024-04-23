@@ -354,6 +354,7 @@ module vanilla_core
 
     ,.op_reads_rf_i({id_r.decode.read_frs3, id_r.decode.read_frs2, id_r.decode.read_frs1})
     ,.op_writes_rf_i(id_r.decode.write_frd)
+    ,.is_simd_op(id_r.decode.is_simd_op)
 
     ,.score_i(float_sb_score)
     ,.score_id_i(float_sb_score_id)
@@ -2065,14 +2066,19 @@ module vanilla_core
     float_rf_wen_li = 4'b0;  
     float_rf_wdata_li = '0;
     
-    if (flw_wb_ctrl_r.is_simd_op) begin
+    if (flw_wb_ctrl_r.is_simd_op & ~float_remote_load_resp_v_i) begin
       float_rf_wdata_li = flw_recoded_data;
     end
     else begin
       float_rf_wdata_li = {4{float_rf_wdata}};
     end
     
-    if (float_rf_wen & ~flw_wb_ctrl_r.is_simd_op) begin
+        
+    if (float_rf_wen & flw_wb_ctrl_r.is_simd_op & ~float_remote_load_resp_v_i) begin
+      float_rf_wen_li = 4'b1111;
+    end
+
+    else if (float_rf_wen) begin
       unique casez (float_rf_waddr[1:0])
         2'b00: begin
           float_rf_wen_li = 4'b0001; //0001
@@ -2088,11 +2094,6 @@ module vanilla_core
         end
         endcase
       end    
-        
-    else if (float_rf_wen & flw_wb_ctrl_r.is_simd_op) begin
-      float_rf_wen_li = 4'b1111;
-    end
-
   end
   
 	
