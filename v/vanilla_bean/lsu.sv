@@ -97,7 +97,6 @@ module lsu
   always_comb begin
     if (exe_decode_i.is_simd_op) begin
       store_simd_data = {{exe_rs2_simd_i},{store_data}};
-     // store_simd_data = {{store_data}, {exe_rs2_simd_i[0]}, {exe_rs2_simd_i[1]}, {exe_rs2_simd_i[2]}};
       store_simd_mask = {{4{store_mask}}};
     end
     else begin
